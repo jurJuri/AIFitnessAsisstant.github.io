@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="common.css">
     <title>Pull Ups Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    
     <style>
         * {
             margin: 0;
@@ -18,168 +18,132 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
-            height: 100vh;
-            width: 100vw;
-            overflow: auto;
-            display: flex;
-        }
-
-        .left-panel {
-            width: 40%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a2e; /* Dark Blue Background */
+            color: white;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            color: white;
-            overflow-y: auto;
+            align-items: center;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-y: auto;   /* Allow vertical scroll */
+            padding-bottom: 50px; /* Space at bottom */
         }
 
-        .right-panel {
-            width: 60%;
-            background: #000;
-            position: relative;
+        /* Container for the UI elements */
+        .ui-container {
+            width: 100%;
+            max-width: 600px; /* Limits width on desktop */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 0;
+            flex-direction: column;
         }
 
         .back-button {
             background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 20px;
             text-decoration: none;
-            display: inline-block;
-            text-align: center;
+            font-size: 14px;
+            align-self: flex-start;
+            margin-bottom: 15px;
+            transition: background 0.2s;
         }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
+        
         .exercise-title {
-            font-size: 28px;
-            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
             text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
         .rep-counter {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 25px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px 30px;
             border-radius: 15px;
             text-align: center;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .rep-counter-label {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-
-        .rep-counter-value {
-            font-size: 64px;
-            font-weight: bold;
-        }
+        .rep-counter-label { font-size: 14px; opacity: 0.8; margin-bottom: 5px; letter-spacing: 1px; }
+        .rep-counter-value { font-size: 56px; font-weight: bold; line-height: 1; }
 
         .instruction-panel {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            min-height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(10px);
         }
 
-        .instruction-text {
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .instruction-text.waiting {
-            color: #ffd700;
-        }
-
-        .instruction-text.action {
-            color: #90ee90;
-        }
-
-        .instruction-text.error {
-            color: #ff6b6b;
-        }
-
-        .progress-indicator {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
+        .instruction-text { font-size: 18px; font-weight: 600; }
+        .instruction-text.waiting { color: #ffd700; }
+        .instruction-text.action { color: #90ee90; }
+        
         .controls {
             display: flex;
             gap: 10px;
+            width: 100%;
         }
 
         button {
             flex: 1;
             background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
             color: white;
-            padding: 15px;
+            padding: 12px;
             font-size: 16px;
             font-weight: 600;
-            border-radius: 25px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button#startButton { background: rgba(72, 187, 120, 0.4); border-color: #48bb78; }
+        button#stopButton { background: rgba(245, 101, 101, 0.4); border-color: #f56565; }
 
-        button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .camera-container {
+        /* Camera Section */
+        .video-wrapper {
             width: 100%;
-            max-width: 100%;
-            aspect-ratio: 16 / 9;
+            max-width: 600px; /* Matches UI width */
             position: relative;
             background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            /* No fixed aspect ratio - let the video define height */
+            min-height: 300px; 
+            margin: 0 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
+        /* Crucial for fixing squashing: 
+           The video and canvas occupy the same space, 
+           width fills container, height adjusts automatically 
+        */
         #input_video {
-            position: absolute;
-            top: 0;
-            left: 0;
+            display: block;
             width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: black;
+            height: auto; 
+            transform: scaleX(-1); /* Default Mirror */
         }
 
         #output_canvas {
@@ -188,109 +152,46 @@
             left: 0;
             width: 100%;
             height: 100%;
+            transform: scaleX(-1); /* Default Mirror */
             pointer-events: none;
         }
-
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-                overflow-y: auto;
-            }
-
-            .left-panel {
-                width: 100%;
-                height: auto;
-                min-height: 40vh;
-                max-height: 50vh;
-            }
-
-            .right-panel {
-                width: 100%;
-                height: auto;
-                min-height: 0;
-                padding: 10px 0;
-            }
-
-            .rep-counter-value {
-                font-size: 48px;
-            }
-
-            .instruction-text {
-                font-size: 16px;
-            }
-
-            .exercise-title {
-                font-size: 24px;
-            }
-
-            .back-button {
-                padding: 8px 16px;
-                font-size: 14px;
-            }
-        }
-
+        
+        /* Mobile Specific adjustments */
         @media (max-width: 480px) {
-            .left-panel {
-                padding: 15px;
-                min-height: 45vh;
-            }
-
-            .rep-counter {
-                padding: 20px;
-            }
-
-            .rep-counter-value {
-                font-size: 40px;
-            }
-
-            .instruction-text {
-                font-size: 14px;
-            }
-
-            .exercise-title {
-                font-size: 20px;
-                margin-bottom: 20px;
-            }
-
-            button {
-                padding: 12px;
-                font-size: 14px;
-            }
-            .camera-container {
-                margin-bottom: 30px;
-            }
+            .rep-counter-value { font-size: 48px; }
+            .ui-container { border-radius: 0 0 20px 20px; }
+            .video-wrapper { border-radius: 0; max-width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="left-panel">
-        <a href="index.html" class="back-button">← Back to Menu</a>
-        
-        <div class="exercise-title"> Pull Ups</div>
 
-        <div class="rep-counter">
-            <div class="rep-counter-label">REPS</div>
-            <div class="rep-counter-value" id="repCount">0</div>
+    <div class="ui-container">
+        <a href="index.html" class="back-button">← Back</a>
+        
+        <div class="exercise-title">Pull Ups</div>
+
+        <div class="stats-row">
+            <div class="rep-counter">
+                <div class="rep-counter-label">REPS</div>
+                <div class="rep-counter-value" id="repCount">0</div>
+            </div>
         </div>
 
         <div class="instruction-panel">
-            <div class="instruction-text" id="instruction">Click Start to begin</div>
+            <div class="instruction-text waiting" id="instruction">Press Start</div>
         </div>
-
-        <div class="progress-indicator" id="progress">Pull your body up and lower down</div>
 
         <div class="controls">
             <button id="startButton" onclick="startCamera()">Start</button>
             <button id="stopButton" onclick="stopCamera()" disabled>Stop</button>
-            <button id="switchCameraButton" onclick="switchCamera()">Flip Camera</button>
+            <button id="switchCameraButton" onclick="switchCamera()">Flip</button>
         </div>
     </div>
 
-    <div class="right-panel">
-        <div class="camera-container">
-            <video id="input_video" autoplay playsinline></video>
-            <canvas id="output_canvas"></canvas>
-        </div>
+    <div class="video-wrapper">
+        <video id="input_video" playsinline></video>
+        <canvas id="output_canvas"></canvas>
     </div>
 
     <script type="module">
@@ -299,12 +200,21 @@
         const canvasCtx = canvasElement.getContext('2d');
         const repCountElement = document.getElementById('repCount');
         const instructionElement = document.getElementById('instruction');
-        const progressElement = document.getElementById('progress');
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
 
-        let currentFacingMode = 'user';
+        let currentFacingMode = 'user'; // 'user' (front) or 'environment' (back)
+        let pose = null;
+        let camera = null;
+        
+        // Exercise Logic Variables
+        let counter = 0;
+        let stage = null; 
+        let noseYHistory = [];
+        const maxHistoryLength = 5;
+        let baselineY = null;
 
+        // --- Viewport/Mirror Logic ---
         function updateMirror() {
             if (currentFacingMode === 'user') {
                 videoElement.style.transform = 'scaleX(-1)';
@@ -315,274 +225,178 @@
             }
         }
 
-        window.switchCamera = async function() {
-            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-            if (camera) {
-                camera.stop();
-                camera = null;
+        // --- Resize Logic (Fixes Squashing) ---
+        // We sync the canvas internal resolution to the video's actual resolution
+        function onVideoLoaded() {
+            if (videoElement.readyState >= 2) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+                console.log(`Resized: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
             }
-            updateMirror();
-            if (!pose) initializePose();
-            const container = document.querySelector('.camera-container');
-            camera = new Camera(videoElement, {
-                onFrame: async () => { await pose.send({ image: videoElement }); },
-                width: container.clientWidth || 640,
-                height: Math.round((container.clientWidth || 640) * 9 / 16),
-                facingMode: currentFacingMode
-            });
-            await camera.start();
-            startButton.disabled = true;
-            stopButton.disabled = false;
-            updateUI();
         }
+        videoElement.addEventListener('loadeddata', onVideoLoaded);
+        videoElement.addEventListener('resize', onVideoLoaded);
 
-        // Initialize variables
-        let counter = 0;
-        let stage = null; // 'down' or 'up'
-        let noseYHistory = [];
-        const maxHistoryLength = 5;
-        const visibilityThreshold = 0.5;
-        let baselineY = null; // Baseline nose position when hanging
-
-        let pose = null;
-        let camera = null;
-
-        // Check landmark visibility
-        function checkLandmarkVisibility(landmarks, indices) {
-            for (let idx of indices) {
-                if (landmarks[idx].visibility < visibilityThreshold) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // Smooth Y position using moving average
-        function smoothY(y, history) {
-            history.push(y);
-            if (history.length > maxHistoryLength) {
-                history.shift();
-            }
-            const sum = history.reduce((a, b) => a + b, 0);
-            return sum / history.length;
-        }
-
-        // Update UI
-        function updateUI() {
-            repCountElement.textContent = counter;
-            
-            let instructionText = '';
-            let instructionClass = '';
-
-            if (!pose || !camera) {
-                instructionText = 'Click Start to begin';
-                instructionClass = 'waiting';
-            } else {
-                if (baselineY === null) {
-                    instructionText = 'HANG STILL - CALIBRATING';
-                    instructionClass = 'waiting';
-                } else if (stage === 'down') {
-                    instructionText = 'PULL YOUR BODY UP';
-                    instructionClass = 'action';
-                } else if (stage === 'up') {
-                    instructionText = 'LOWER YOUR BODY DOWN';
-                    instructionClass = 'waiting';
-                } else {
-                    instructionText = 'START: HANG DOWN';
-                    instructionClass = 'waiting';
-                }
-            }
-
-            instructionElement.textContent = instructionText;
-            instructionElement.className = 'instruction-text ' + instructionClass;
-        }
-
-        // Process pose results
+        // --- Pose Logic ---
         function onResults(results) {
+            // Ensure canvas matches video size every frame to prevent drift
+            if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            }
+
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // Draw the video frame onto the canvas
+            // Note: We don't draw the image here because the <video> tag is visible underneath.
+            // This improves performance on mobile. We only draw landmarks.
+            // If you want to draw the video on canvas, uncomment next line and hide <video> via CSS.
+            // canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
                 const h = canvasElement.height;
                 const w = canvasElement.width;
 
-                // Track nose position for pull ups
-                const noseIdx = 0; // NOSE
-                const leftWristIdx = 15;
-                const rightWristIdx = 16;
-                const leftShoulderIdx = 11;
-                const rightShoulderIdx = 12;
+                drawConnectors(canvasCtx, landmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
+                drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2, radius: 4});
 
-                const noseVisible = checkLandmarkVisibility(landmarks, [noseIdx]);
-                const wristsVisible = checkLandmarkVisibility(landmarks, [leftWristIdx, rightWristIdx]);
+                // --- Pull Up Counter Logic ---
+                const noseIdx = 0;
+                const noseY = landmarks[noseIdx].y; // 0 to 1 scale
+                const vis = landmarks[noseIdx].visibility;
 
-                if (noseVisible && wristsVisible) {
-                    const noseY = landmarks[noseIdx].y;
-                    const leftWristY = landmarks[leftWristIdx].y;
-                    const rightWristY = landmarks[rightWristIdx].y;
-                    const avgWristY = (leftWristY + rightWristY) / 2;
-
-                    // Set baseline when hanging (wrist above nose means hanging)
-                    if (baselineY === null && avgWristY < noseY) {
-                        baselineY = noseY;
-                        console.log('Baseline set');
+                if (vis > 0.5) {
+                    // Simple Calibration: First valid frame establishes baseline
+                    // In a real app, you might want a specific "Calibrate" button
+                    if (baselineY === null) {
+                        baselineY = noseY; 
                     }
 
-                    if (baselineY !== null) {
-                        const smoothedNoseY = smoothY(noseY, noseYHistory);
-                        const relativePosition = smoothedNoseY - baselineY;
+                    // Smooth the Y data
+                    noseYHistory.push(noseY);
+                    if (noseYHistory.length > maxHistoryLength) noseYHistory.shift();
+                    const smoothNoseY = noseYHistory.reduce((a, b) => a + b, 0) / noseYHistory.length;
 
-                        // Display position info
-                        const noseX = landmarks[noseIdx].x * w;
-                        const noseYPixel = landmarks[noseIdx].y * h;
-                        canvasCtx.fillStyle = 'yellow';
-                        canvasCtx.font = 'bold 18px Arial';
-                        const positionText = relativePosition > 0 ? 'DOWN' : 'UP';
-                        canvasCtx.fillText(positionText, noseX - 30, noseYPixel - 20);
+                    // Calculate displacement
+                    const diff = smoothNoseY - baselineY;
 
-                        // Pull up logic: 
-                        // Down position: nose is below baseline (relativePosition > 0.05)
-                        // Up position: nose is above baseline (relativePosition < -0.05)
-                        if (relativePosition > 0.05) {
-                            stage = 'down';
-                        } else if (relativePosition < -0.05 && stage === 'down') {
-                            stage = 'up';
-                            counter++;
-                            console.log(`Rep Count: ${counter}`);
-                        }
+                    // Thresholds (tunable)
+                    // Positive diff means moving DOWN (Y increases downwards in canvas)
+                    // Negative diff means moving UP
+                    const UP_THRESH = -0.15; // moved up significantly
+                    const DOWN_THRESH = 0.05; // returned to roughly start
+
+                    if (diff < UP_THRESH) {
+                        stage = "up";
+                        instructionElement.textContent = "LOWER DOWN";
+                        instructionElement.className = "instruction-text action";
+                    } 
+                    
+                    if (diff > DOWN_THRESH && stage === 'up') {
+                        stage = "down";
+                        counter++;
+                        repCountElement.textContent = counter;
+                        instructionElement.textContent = "PULL UP";
+                        instructionElement.className = "instruction-text waiting";
                     }
-                } else {
-                    stage = null;
+
+                    // Draw Status on Canvas for easy viewing
+                    canvasCtx.font = "30px Arial";
+                    canvasCtx.fillStyle = "yellow";
+                    // Flip text drawing if mirrored
+                    canvasCtx.save();
+                    if(currentFacingMode === 'user') {
+                        canvasCtx.scale(-1, 1);
+                        canvasCtx.fillText(Math.round(diff*100), -50, 50); // Debug number
+                    } else {
+                        canvasCtx.fillText(Math.round(diff*100), 50, 50);
+                    }
+                    canvasCtx.restore();
                 }
-
-                // Draw pose landmarks and connections
-                const connections = [
-                    [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
-                    [11, 23], [12, 24], [23, 24],
-                    [23, 25], [24, 26], [25, 27], [26, 28]
-                ];
-                
-                canvasCtx.strokeStyle = '#00FF00';
-                canvasCtx.lineWidth = 3;
-                connections.forEach(([start, end]) => {
-                    if (landmarks[start] && landmarks[end]) {
-                        canvasCtx.beginPath();
-                        canvasCtx.moveTo(landmarks[start].x * w, landmarks[start].y * h);
-                        canvasCtx.lineTo(landmarks[end].x * w, landmarks[end].y * h);
-                        canvasCtx.stroke();
-                    }
-                });
-                
-                canvasCtx.fillStyle = '#FF0000';
-                landmarks.forEach((landmark) => {
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(landmark.x * w, landmark.y * h, 4, 0, 2 * Math.PI);
-                    canvasCtx.fill();
-                });
-            } else {
-                stage = null;
             }
-
             canvasCtx.restore();
-            updateUI();
         }
 
-        // Initialize MediaPipe Pose
+        // --- Initialization ---
         function initializePose() {
-            pose = new Pose({
-                locateFile: (file) => {
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-                }
-            });
-
+            pose = new Pose({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+            }});
+            
             pose.setOptions({
                 modelComplexity: 1,
                 smoothLandmarks: true,
-                enableSegmentation: false,
-                smoothSegmentation: false,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
             });
-
+            
             pose.onResults(onResults);
         }
 
-        // Start camera
-        window.startCamera = function() {
+        // --- Control Functions ---
+        window.startCamera = async function() {
+            if (!pose) initializePose();
+            
             if (camera) {
+                await camera.start();
                 return;
             }
 
-            initializePose();
-
-            const container = document.querySelector('.camera-container');
+            // We do NOT set width/height here. We let the camera 
+            // determine the best resolution for the device to avoid squashing.
             camera = new Camera(videoElement, {
-                onFrame: async () => { await pose.send({ image: videoElement }); },
-                width: container.clientWidth || 640,
-                height: Math.round((container.clientWidth || 640) * 9 / 16),
+                onFrame: async () => {
+                    await pose.send({image: videoElement});
+                },
+                // width: 1280, // Removed to fix aspect ratio
+                // height: 720, // Removed to fix aspect ratio
                 facingMode: currentFacingMode
             });
 
-            camera.start();
-            updateMirror();
-            startButton.disabled = true;
-            stopButton.disabled = false;
-            baselineY = null; // Reset baseline
-            stage = null;
-            updateUI();
+            try {
+                await camera.start();
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                instructionElement.textContent = "Hang to Calibrate";
+                instructionElement.className = "instruction-text waiting";
+            } catch (e) {
+                console.error(e);
+                alert("Error starting camera. Please allow permissions.");
+            }
         };
 
-        // Stop camera
         window.stopCamera = function() {
             if (camera) {
-                camera.stop();
-                camera = null;
+                // MediaPipe camera stop is sometimes buggy, we pause video
+                videoElement.pause();
+                // If possible in future versions, use camera.stop()
             }
-            if (pose) {
-                pose.close();
-                pose = null;
-            }
-            
             counter = 0;
-            stage = null;
-            baselineY = null;
-            noseYHistory = [];
-            
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            videoElement.srcObject = null;
-            
+            repCountElement.textContent = "0";
             startButton.disabled = false;
             stopButton.disabled = true;
-            updateUI();
+            instructionElement.textContent = "Press Start";
+            
+            // Clear canvas
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         };
 
-        // Set canvas size
-        function setupCanvas() {
-            const updateCanvasSize = () => {
-                const panel = document.querySelector('.camera-container');
-                if (panel) {
-                    canvasElement.width = panel.clientWidth;
-                    canvasElement.height = panel.clientHeight;
-                }
-            };
+        window.switchCamera = async function() {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            updateMirror();
             
-            updateCanvasSize();
-            window.addEventListener('resize', updateCanvasSize);
-        }
-
-        // Initialize
-        setupCanvas();
-        updateUI();
-
-        // Handle page visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && camera) {
-                window.stopCamera();
+            // Restart if running
+            if (startButton.disabled) {
+                // Simple restart logic: stop logic then start new camera
+                if (camera) {
+                    await camera.stop(); // Stop current stream
+                    camera = null;       // Destroy instance
+                }
+                window.startCamera();
             }
-        });
+        }
     </script>
 </body>
 </html>
-
