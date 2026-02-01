@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Tracker - Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .exercise-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .exercise-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .exercise-card:active {
+            transform: translateY(-2px);
+        }
+
+        .exercise-card h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .exercise-card p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .exercise-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .exercise-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                gap: 15px;
+            }
+
+            .container {
+                padding: 30px 20px;
+                max-width: 100%;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .exercise-card {
+                padding: 20px;
+            }
+
+            .exercise-card h2 {
+                font-size: 18px;
+            }
+
+            .exercise-icon {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .exercise-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                gap: 15px;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .exercise-card {
+                padding: 20px;
+            }
+
+            .exercise-card h2 {
+                font-size: 18px;
+            }
+
+            .exercise-icon {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 Fitness Tracker</h1>
+            <p>Select an exercise to begin</p>
+        </div>
+
+        <div class="exercise-grid">
+            <div class="exercise-card" onclick="window.location.href='bicepsCurl_web.html'">
+                <div class="exercise-icon">💪</div>
+                <h2>Biceps Curl</h2>
+                <p>Alternating arm curls - Left then Right</p>
+            </div>
+
+            <div class="exercise-card" onclick="window.location.href='shoulderPress_web.html'">
+                <div class="exercise-icon">🏋️</div>
+                <h2>Shoulder Overhead Press</h2>
+                <p>Press weights overhead - Both arms together</p>
+            </div>
+
+            <div class="exercise-card" onclick="window.location.href='pullUps_web.html'">
+                <div class="exercise-icon">🤸</div>
+                <h2>Pull Ups</h2>
+                <p>Pull your body up - Full range of motion</p>
+            </div>
+
+            <div class="exercise-card" onclick="window.location.href='latPullDown_web.html'">
+                <div class="exercise-icon">🏋️‍♂️</div>
+                <h2>Lat Pull Down</h2>
+                <p>Pull bar down to chest - Both arms together</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

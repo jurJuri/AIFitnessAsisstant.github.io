@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Biceps Curl Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .left-panel {
+            width: 40%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            color: white;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            width: 60%;
+            background: #000;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .exercise-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .rep-counter {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .rep-counter-label {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .rep-counter-value {
+            font-size: 64px;
+            font-weight: bold;
+        }
+
+        .instruction-panel {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .instruction-text {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .instruction-text.waiting {
+            color: #ffd700;
+        }
+
+        .instruction-text.action {
+            color: #90ee90;
+        }
+
+        .instruction-text.error {
+            color: #ff6b6b;
+        }
+
+        .progress-indicator {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #input_video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #output_canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .left-panel {
+                width: 100%;
+                height: auto;
+                min-height: 40vh;
+                max-height: 50vh;
+            }
+
+            .right-panel {
+                width: 100%;
+                height: 50vh;
+                min-height: 50vh;
+            }
+
+            .rep-counter-value {
+                font-size: 48px;
+            }
+
+            .instruction-text {
+                font-size: 16px;
+            }
+
+            .exercise-title {
+                font-size: 24px;
+            }
+
+            .back-button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .left-panel {
+                padding: 15px;
+                min-height: 45vh;
+            }
+
+            .rep-counter {
+                padding: 20px;
+            }
+
+            .rep-counter-value {
+                font-size: 40px;
+            }
+
+            .instruction-text {
+                font-size: 14px;
+            }
+
+            .exercise-title {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            button {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <a href="index.html" class="back-button">← Back to Menu</a>
+        
+        <div class="exercise-title">💪 Biceps Curl</div>
+
+        <div class="rep-counter">
+            <div class="rep-counter-label">REPS</div>
+            <div class="rep-counter-value" id="repCount">0</div>
+        </div>
+
+        <div class="instruction-panel">
+            <div class="instruction-text" id="instruction">Click Start to begin</div>
+        </div>
+
+        <div class="progress-indicator" id="progress">Progress: LEFT → RIGHT</div>
+
+        <div class="controls">
+            <button id="startButton" onclick="startCamera()">Start</button>
+            <button id="stopButton" onclick="stopCamera()" disabled>Stop</button>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <video id="input_video" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <script type="module">
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const repCountElement = document.getElementById('repCount');
+        const instructionElement = document.getElementById('instruction');
+        const progressElement = document.getElementById('progress');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+
+        // Initialize variables
+        let counter = 0;
+        let leftStage = null;
+        let rightStage = null;
+        let nextArm = 'left';
+        let leftAngleHistory = [];
+        let rightAngleHistory = [];
+        const maxHistoryLength = 5;
+        const visibilityThreshold = 0.5;
+
+        let pose = null;
+        let camera = null;
+
+        // Calculate angle between three points
+        function calculateAngle(a, b, c) {
+            const radians = Math.atan2(c[1] - b[1], c[0] - b[0]) - 
+                           Math.atan2(a[1] - b[1], a[0] - b[0]);
+            let angle = Math.abs(radians * 180.0 / Math.PI);
+            
+            if (angle > 180.0) {
+                angle = 360 - angle;
+            }
+            
+            return angle;
+        }
+
+        // Check landmark visibility
+        function checkLandmarkVisibility(landmarks, indices) {
+            for (let idx of indices) {
+                if (landmarks[idx].visibility < visibilityThreshold) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Smooth angle using moving average
+        function smoothAngle(angle, history) {
+            history.push(angle);
+            if (history.length > maxHistoryLength) {
+                history.shift();
+            }
+            const sum = history.reduce((a, b) => a + b, 0);
+            return sum / history.length;
+        }
+
+        // Update UI
+        function updateUI() {
+            repCountElement.textContent = counter;
+            
+            let instructionText = '';
+            let instructionClass = '';
+            let progressText = '';
+
+            if (!pose || !camera) {
+                instructionText = 'Click Start to begin';
+                instructionClass = 'waiting';
+            } else {
+                if (nextArm === 'left') {
+                    if (leftStage === 'down') {
+                        instructionText = 'CURL YOUR LEFT ARM UP';
+                        instructionClass = 'action';
+                    } else if (leftStage === 'up') {
+                        instructionText = 'EXTEND YOUR LEFT ARM DOWN';
+                        instructionClass = 'waiting';
+                    } else {
+                        instructionText = 'START: EXTEND LEFT ARM DOWN';
+                        instructionClass = 'waiting';
+                    }
+                    progressText = 'Progress: LEFT → RIGHT';
+                } else {
+                    if (rightStage === 'down') {
+                        instructionText = 'CURL YOUR RIGHT ARM UP';
+                        instructionClass = 'action';
+                    } else if (rightStage === 'up') {
+                        instructionText = 'EXTEND YOUR RIGHT ARM DOWN';
+                        instructionClass = 'waiting';
+                    } else {
+                        instructionText = 'NOW: EXTEND RIGHT ARM DOWN';
+                        instructionClass = 'waiting';
+                    }
+                    progressText = 'Progress: LEFT ✓ → RIGHT';
+                }
+            }
+
+            instructionElement.textContent = instructionText;
+            instructionElement.className = 'instruction-text ' + instructionClass;
+            progressElement.textContent = progressText;
+        }
+
+        // Process pose results
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.poseLandmarks) {
+                const landmarks = results.poseLandmarks;
+                const h = canvasElement.height;
+                const w = canvasElement.width;
+
+                // Process LEFT arm
+                const leftShoulderIdx = 11;
+                const leftElbowIdx = 13;
+                const leftWristIdx = 15;
+
+                const leftArmVisible = checkLandmarkVisibility(
+                    landmarks,
+                    [leftShoulderIdx, leftElbowIdx, leftWristIdx]
+                );
+
+                if (leftArmVisible) {
+                    const leftShoulder = [landmarks[leftShoulderIdx].x, landmarks[leftShoulderIdx].y];
+                    const leftElbow = [landmarks[leftElbowIdx].x, landmarks[leftElbowIdx].y];
+                    const leftWrist = [landmarks[leftWristIdx].x, landmarks[leftWristIdx].y];
+
+                    const leftAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+                    const leftSmoothedAngle = smoothAngle(leftAngle, leftAngleHistory);
+
+                    // Display left angle
+                    const leftElbowX = leftElbow[0] * w;
+                    const leftElbowY = leftElbow[1] * h;
+                    canvasCtx.fillStyle = 'yellow';
+                    canvasCtx.font = 'bold 18px Arial';
+                    canvasCtx.fillText(`L: ${Math.round(leftSmoothedAngle)}°`, leftElbowX - 40, leftElbowY);
+
+                    // Left arm curl logic
+                    if (leftSmoothedAngle > 150) {
+                        leftStage = 'down';
+                    } else if (leftSmoothedAngle < 60 && leftStage === 'down') {
+                        leftStage = 'up';
+                        if (nextArm === 'left') {
+                            nextArm = 'right';
+                            console.log('Left arm complete! Now curl RIGHT arm');
+                        }
+                    }
+                }
+
+                // Process RIGHT arm
+                const rightShoulderIdx = 12;
+                const rightElbowIdx = 14;
+                const rightWristIdx = 16;
+
+                const rightArmVisible = checkLandmarkVisibility(
+                    landmarks,
+                    [rightShoulderIdx, rightElbowIdx, rightWristIdx]
+                );
+
+                if (rightArmVisible) {
+                    const rightShoulder = [landmarks[rightShoulderIdx].x, landmarks[rightShoulderIdx].y];
+                    const rightElbow = [landmarks[rightElbowIdx].x, landmarks[rightElbowIdx].y];
+                    const rightWrist = [landmarks[rightWristIdx].x, landmarks[rightWristIdx].y];
+
+                    const rightAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+                    const rightSmoothedAngle = smoothAngle(rightAngle, rightAngleHistory);
+
+                    // Display right angle
+                    const rightElbowX = rightElbow[0] * w;
+                    const rightElbowY = rightElbow[1] * h;
+                    canvasCtx.fillStyle = 'yellow';
+                    canvasCtx.font = 'bold 18px Arial';
+                    canvasCtx.fillText(`R: ${Math.round(rightSmoothedAngle)}°`, rightElbowX - 40, rightElbowY);
+
+                    // Right arm curl logic
+                    if (rightSmoothedAngle > 150) {
+                        rightStage = 'down';
+                    } else if (rightSmoothedAngle < 60 && rightStage === 'down') {
+                        rightStage = 'up';
+                        if (nextArm === 'right') {
+                            counter++;
+                            console.log(`Rep Count: ${counter} - Both arms complete!`);
+                            nextArm = 'left';
+                            leftStage = null;
+                            rightStage = null;
+                        }
+                    }
+                }
+
+                // Draw pose landmarks and connections
+                const connections = [
+                    [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+                    [11, 23], [12, 24], [23, 24],
+                    [23, 25], [24, 26], [25, 27], [26, 28]
+                ];
+                
+                canvasCtx.strokeStyle = '#00FF00';
+                canvasCtx.lineWidth = 3;
+                connections.forEach(([start, end]) => {
+                    if (landmarks[start] && landmarks[end]) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(landmarks[start].x * w, landmarks[start].y * h);
+                        canvasCtx.lineTo(landmarks[end].x * w, landmarks[end].y * h);
+                        canvasCtx.stroke();
+                    }
+                });
+                
+                canvasCtx.fillStyle = '#FF0000';
+                landmarks.forEach((landmark) => {
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(landmark.x * w, landmark.y * h, 4, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+                });
+            } else {
+                leftStage = null;
+                rightStage = null;
+                nextArm = 'left';
+            }
+
+            canvasCtx.restore();
+            updateUI();
+        }
+
+        // Initialize MediaPipe Pose
+        function initializePose() {
+            pose = new Pose({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+                }
+            });
+
+            pose.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                smoothSegmentation: false,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
+
+            pose.onResults(onResults);
+        }
+
+        // Start camera
+        window.startCamera = function() {
+            if (camera) {
+                return;
+            }
+
+            initializePose();
+
+            camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    await pose.send({ image: videoElement });
+                },
+                width: 640,
+                height: 480
+            });
+
+            camera.start();
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            updateUI();
+        };
+
+        // Stop camera
+        window.stopCamera = function() {
+            if (camera) {
+                camera.stop();
+                camera = null;
+            }
+            if (pose) {
+                pose.close();
+                pose = null;
+            }
+            
+            counter = 0;
+            leftStage = null;
+            rightStage = null;
+            nextArm = 'left';
+            leftAngleHistory = [];
+            rightAngleHistory = [];
+            
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            videoElement.srcObject = null;
+            
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            updateUI();
+        };
+
+        // Set canvas size
+        function setupCanvas() {
+            const updateCanvasSize = () => {
+                const panel = document.querySelector('.right-panel');
+                canvasElement.width = panel.clientWidth;
+                canvasElement.height = panel.clientHeight;
+            };
+            
+            updateCanvasSize();
+            window.addEventListener('resize', updateCanvasSize);
+        }
+
+        // Initialize
+        setupCanvas();
+        updateUI();
+
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && camera) {
+                window.stopCamera();
+            }
+        });
+    </script>
+</body>
+</html>
