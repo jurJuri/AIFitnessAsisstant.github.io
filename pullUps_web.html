@@ -18,21 +18,20 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e; /* Dark Blue Background */
+            background: #1a1a2e;
             color: white;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden; /* Prevent horizontal scroll */
-            overflow-y: auto;   /* Allow vertical scroll */
-            padding-bottom: 50px; /* Space at bottom */
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding-bottom: 50px;
         }
 
-        /* Container for the UI elements */
         .ui-container {
             width: 100%;
-            max-width: 600px; /* Limits width on desktop */
+            max-width: 600px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
             border-bottom-left-radius: 20px;
@@ -121,29 +120,23 @@
         button#startButton { background: rgba(72, 187, 120, 0.4); border-color: #48bb78; }
         button#stopButton { background: rgba(245, 101, 101, 0.4); border-color: #f56565; }
 
-        /* Camera Section */
         .video-wrapper {
             width: 100%;
-            max-width: 600px; /* Matches UI width */
+            max-width: 600px;
             position: relative;
             background: #000;
             border-radius: 15px;
             overflow: hidden;
-            /* No fixed aspect ratio - let the video define height */
             min-height: 300px; 
             margin: 0 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        /* Crucial for fixing squashing: 
-           The video and canvas occupy the same space, 
-           width fills container, height adjusts automatically 
-        */
         #input_video {
             display: block;
             width: 100%;
             height: auto; 
-            transform: scaleX(-1); /* Default Mirror */
+            transform: scaleX(-1);
         }
 
         #output_canvas {
@@ -152,11 +145,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            transform: scaleX(-1); /* Default Mirror */
+            transform: scaleX(-1);
             pointer-events: none;
         }
         
-        /* Mobile Specific adjustments */
         @media (max-width: 480px) {
             .rep-counter-value { font-size: 48px; }
             .ui-container { border-radius: 0 0 20px 20px; }
@@ -203,18 +195,16 @@
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
 
-        let currentFacingMode = 'user'; // 'user' (front) or 'environment' (back)
+        let currentFacingMode = 'user';
         let pose = null;
         let camera = null;
         
-        // Exercise Logic Variables
         let counter = 0;
         let stage = null; 
         let noseYHistory = [];
         const maxHistoryLength = 5;
         let baselineY = null;
 
-        // --- Viewport/Mirror Logic ---
         function updateMirror() {
             if (currentFacingMode === 'user') {
                 videoElement.style.transform = 'scaleX(-1)';
@@ -225,21 +215,16 @@
             }
         }
 
-        // --- Resize Logic (Fixes Squashing) ---
-        // We sync the canvas internal resolution to the video's actual resolution
         function onVideoLoaded() {
             if (videoElement.readyState >= 2) {
                 canvasElement.width = videoElement.videoWidth;
                 canvasElement.height = videoElement.videoHeight;
-                console.log(`Resized: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
             }
         }
         videoElement.addEventListener('loadeddata', onVideoLoaded);
         videoElement.addEventListener('resize', onVideoLoaded);
 
-        // --- Pose Logic ---
         function onResults(results) {
-            // Ensure canvas matches video size every frame to prevent drift
             if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
                 canvasElement.width = videoElement.videoWidth;
                 canvasElement.height = videoElement.videoHeight;
@@ -248,45 +233,27 @@
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             
-            // Draw the video frame onto the canvas
-            // Note: We don't draw the image here because the <video> tag is visible underneath.
-            // This improves performance on mobile. We only draw landmarks.
-            // If you want to draw the video on canvas, uncomment next line and hide <video> via CSS.
-            // canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
-                const h = canvasElement.height;
-                const w = canvasElement.width;
-
+                
+                // Draw skeleton
                 drawConnectors(canvasCtx, landmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
                 drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2, radius: 4});
 
-                // --- Pull Up Counter Logic ---
                 const noseIdx = 0;
-                const noseY = landmarks[noseIdx].y; // 0 to 1 scale
+                const noseY = landmarks[noseIdx].y;
                 const vis = landmarks[noseIdx].visibility;
 
                 if (vis > 0.5) {
-                    // Simple Calibration: First valid frame establishes baseline
-                    // In a real app, you might want a specific "Calibrate" button
-                    if (baselineY === null) {
-                        baselineY = noseY; 
-                    }
+                    if (baselineY === null) baselineY = noseY; 
 
-                    // Smooth the Y data
                     noseYHistory.push(noseY);
                     if (noseYHistory.length > maxHistoryLength) noseYHistory.shift();
                     const smoothNoseY = noseYHistory.reduce((a, b) => a + b, 0) / noseYHistory.length;
 
-                    // Calculate displacement
                     const diff = smoothNoseY - baselineY;
-
-                    // Thresholds (tunable)
-                    // Positive diff means moving DOWN (Y increases downwards in canvas)
-                    // Negative diff means moving UP
-                    const UP_THRESH = -0.15; // moved up significantly
-                    const DOWN_THRESH = 0.05; // returned to roughly start
+                    const UP_THRESH = -0.15;
+                    const DOWN_THRESH = 0.05;
 
                     if (diff < UP_THRESH) {
                         stage = "up";
@@ -302,24 +269,65 @@
                         instructionElement.className = "instruction-text waiting";
                     }
 
-                    // Draw Status on Canvas for easy viewing
-                    canvasCtx.font = "30px Arial";
-                    canvasCtx.fillStyle = "yellow";
-                    // Flip text drawing if mirrored
+                    // --- DRAWING ON CANVAS ---
                     canvasCtx.save();
+                    
+                    // Handle Mirroring Logic for Text
                     if(currentFacingMode === 'user') {
+                        // Flip text drawing coordinate system
                         canvasCtx.scale(-1, 1);
-                        canvasCtx.fillText(Math.round(diff*100), -50, 50); // Debug number
+                        
+                        // 1. Draw Debug Number (Distance)
+                        canvasCtx.font = "30px Arial";
+                        canvasCtx.fillStyle = "yellow";
+                        canvasCtx.fillText(Math.round(diff*100), -50, 50);
+
+                        // 2. Draw BIG REP COUNTER on Left Side
+                        // Since we scaled by -1, X needs to be negative to appear on the left
+                        canvasCtx.font = "bold 120px sans-serif";
+                        canvasCtx.lineWidth = 4;
+                        canvasCtx.strokeStyle = "black"; // Outline
+                        canvasCtx.fillStyle = "#00FFFF"; // Cyan color
+                        
+                        // Draw outline then fill
+                        canvasCtx.strokeText(counter, -120, 150);
+                        canvasCtx.fillText(counter, -120, 150);
+
+                        // Label "REPS" underneath
+                        canvasCtx.font = "bold 30px sans-serif";
+                        canvasCtx.fillStyle = "white";
+                        canvasCtx.strokeText("REPS", -120, 190);
+                        canvasCtx.fillText("REPS", -120, 190);
+
                     } else {
+                        // Standard Mode (No Flip)
+                        
+                        // 1. Debug Number
+                        canvasCtx.font = "30px Arial";
+                        canvasCtx.fillStyle = "yellow";
                         canvasCtx.fillText(Math.round(diff*100), 50, 50);
+
+                        // 2. BIG REP COUNTER
+                        canvasCtx.font = "bold 120px sans-serif";
+                        canvasCtx.lineWidth = 4;
+                        canvasCtx.strokeStyle = "black";
+                        canvasCtx.fillStyle = "#00FFFF";
+                        
+                        canvasCtx.strokeText(counter, 50, 150);
+                        canvasCtx.fillText(counter, 50, 150);
+
+                        canvasCtx.font = "bold 30px sans-serif";
+                        canvasCtx.fillStyle = "white";
+                        canvasCtx.strokeText("REPS", 50, 190);
+                        canvasCtx.fillText("REPS", 50, 190);
                     }
                     canvasCtx.restore();
+                    // -------------------------
                 }
             }
             canvasCtx.restore();
         }
 
-        // --- Initialization ---
         function initializePose() {
             pose = new Pose({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
@@ -335,7 +343,6 @@
             pose.onResults(onResults);
         }
 
-        // --- Control Functions ---
         window.startCamera = async function() {
             if (!pose) initializePose();
             
@@ -344,14 +351,10 @@
                 return;
             }
 
-            // We do NOT set width/height here. We let the camera 
-            // determine the best resolution for the device to avoid squashing.
             camera = new Camera(videoElement, {
                 onFrame: async () => {
                     await pose.send({image: videoElement});
                 },
-                // width: 1280, // Removed to fix aspect ratio
-                // height: 720, // Removed to fix aspect ratio
                 facingMode: currentFacingMode
             });
 
@@ -369,17 +372,13 @@
 
         window.stopCamera = function() {
             if (camera) {
-                // MediaPipe camera stop is sometimes buggy, we pause video
                 videoElement.pause();
-                // If possible in future versions, use camera.stop()
             }
             counter = 0;
             repCountElement.textContent = "0";
             startButton.disabled = false;
             stopButton.disabled = true;
             instructionElement.textContent = "Press Start";
-            
-            // Clear canvas
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         };
 
@@ -387,12 +386,10 @@
             currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
             updateMirror();
             
-            // Restart if running
             if (startButton.disabled) {
-                // Simple restart logic: stop logic then start new camera
                 if (camera) {
-                    await camera.stop(); // Stop current stream
-                    camera = null;       // Destroy instance
+                    await camera.stop();
+                    camera = null;
                 }
                 window.startCamera();
             }
